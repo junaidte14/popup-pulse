@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Popup Pulse — Frontend Styles
+   ========================================================================== */
+
+/* ── CSS Custom Properties ───────────────────────────────────────────────── */
+:root {
+    --pp-z-overlay:   99990;
+    --pp-z-popup:     99991;
+    --pp-z-close:     99992;
+    --pp-radius:      12px;
+    --pp-radius-btn:  50%;
+    --pp-close-size:  36px;
+    --pp-shadow:      0 20px 60px rgba(0,0,0,.25);
+    --pp-anim-dur:    0.35s;
+    --pp-anim-ease:   cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+
+/* ── Wrapper — full-screen positioning container ─────────────────────────── */
+.ppulse-popup-wrapper {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    z-index: var(--pp-z-overlay);
+    pointer-events: none;
+}
+
+/* Position variants */
+.ppulse-pos-center        { align-items: center;     justify-content: center;  padding: 16px; }
+.ppulse-pos-top-left      { align-items: flex-start; justify-content: flex-start; padding: 20px; }
+.ppulse-pos-top-right     { align-items: flex-start; justify-content: flex-end;   padding: 20px; }
+.ppulse-pos-bottom-left   { align-items: flex-end;   justify-content: flex-start; padding: 20px; }
+.ppulse-pos-bottom-right  { align-items: flex-end;   justify-content: flex-end;   padding: 20px; }
+
+/* Bar variants */
+.ppulse-popup-wrapper--bar {
+    align-items: stretch;
+    justify-content: stretch;
+}
+.ppulse-pos-top-bar    { top: 0;  bottom: auto; height: auto; }
+.ppulse-pos-bottom-bar { top: auto; bottom: 0;  height: auto; }
+.ppulse-pos-top-bar  .ppulse-popup,
+.ppulse-pos-bottom-bar .ppulse-popup {
+    width: 100%;
+    max-width: 100% !important;
+    border-radius: 0;
+}
+
+/* ── Overlay ──────────────────────────────────────────────────────────────── */
+.ppulse-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: var(--pp-z-overlay);
+    pointer-events: auto;
+}
+
+/* ── Popup box ────────────────────────────────────────────────────────────── */
+.ppulse-popup {
+    position: relative;
+    z-index: var(--pp-z-popup);
+    border-radius: var(--pp-radius);
+    box-shadow: var(--pp-shadow);
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    pointer-events: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,.15) transparent;
+}
+.ppulse-popup::-webkit-scrollbar       { width: 5px; }
+.ppulse-popup::-webkit-scrollbar-track { background: transparent; }
+.ppulse-popup::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 4px; }
+
+/* Full-screen for image cover */
+.ppulse-pos-center .ppulse-popup[style*="background-image"] {
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+}
+
+/* ── Close button ─────────────────────────────────────────────────────────── */
+.ppulse-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: var(--pp-z-close);
+    width: var(--pp-close-size);
+    height: var(--pp-close-size);
+    border-radius: var(--pp-radius-btn);
+    border: none;
+    background: rgba(0,0,0,.15);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s, transform 0.18s;
+    padding: 0;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.ppulse-close:hover {
+    background: rgba(0,0,0,.3);
+    transform: scale(1.1);
+}
+.ppulse-close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* ── Auto-close progress bar ─────────────────────────────────────────────── */
+.ppulse-autoclose-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(0,0,0,.08);
+    overflow: hidden;
+    border-radius: 0 0 var(--pp-radius) var(--pp-radius);
+}
+.ppulse-autoclose-bar__fill {
+    height: 100%;
+    background: currentColor;
+    opacity: .4;
+    width: 100%;
+    transform-origin: left;
+    animation: ppAutoClose linear forwards;
+}
+@keyframes ppAutoClose {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+}
+
+/* ── Content area ────────────────────────────────────────────────────────── */
+.ppulse-popup__content {
+    /* Let Gutenberg styles apply naturally */
+}
+.ppulse-popup__content > *:first-child { margin-top: 0; }
+.ppulse-popup__content > *:last-child  { margin-bottom: 0; }
+
+/* ── Open state ──────────────────────────────────────────────────────────── */
+.ppulse-popup-wrapper.is-open {
+    display: flex !important;
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+/* Fade */
+.ppulse-popup--anim-fade {
+    animation: ppFadeIn var(--pp-anim-dur) ease forwards;
+}
+.ppulse-popup--anim-fade.is-closing {
+    animation: ppFadeOut 0.22s ease forwards;
+}
+
+/* Slide up */
+.ppulse-popup--anim-slide-up {
+    animation: ppSlideUp var(--pp-anim-dur) var(--pp-anim-ease) forwards;
+}
+.ppulse-popup--anim-slide-up.is-closing {
+    animation: ppSlideDown 0.22s ease forwards;
+}
+
+/* Slide down */
+.ppulse-popup--anim-slide-down {
+    animation: ppSlideDown2 var(--pp-anim-dur) var(--pp-anim-ease) forwards;
+}
+.ppulse-popup--anim-slide-down.is-closing {
+    animation: ppSlideUp2 0.22s ease forwards;
+}
+
+/* Zoom */
+.ppulse-popup--anim-zoom {
+    animation: ppZoomIn var(--pp-anim-dur) var(--pp-anim-ease) forwards;
+}
+.ppulse-popup--anim-zoom.is-closing {
+    animation: ppZoomOut 0.22s ease forwards;
+}
+
+/* Bounce */
+.ppulse-popup--anim-bounce {
+    animation: ppBounce 0.6s var(--pp-anim-ease) forwards;
+}
+
+@keyframes ppFadeIn    { from { opacity: 0; }              to { opacity: 1; } }
+@keyframes ppFadeOut   { from { opacity: 1; }              to { opacity: 0; } }
+@keyframes ppSlideUp   { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ppSlideDown { from { opacity: 1; transform: translateY(0); }   to { opacity: 0; transform: translateY(40px); } }
+@keyframes ppSlideDown2{ from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ppSlideUp2  { from { opacity: 1; transform: translateY(0); }   to { opacity: 0; transform: translateY(-40px); } }
+@keyframes ppZoomIn    { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes ppZoomOut   { from { opacity: 1; transform: scale(1); }   to { opacity: 0; transform: scale(0.82); } }
+@keyframes ppBounce    {
+    0%   { opacity: 0; transform: scale(0.7); }
+    60%  { opacity: 1; transform: scale(1.06); }
+    80%  { transform: scale(0.97); }
+    100% { transform: scale(1); }
+}
+
+/* Overlay fade */
+.ppulse-popup-wrapper.is-open .ppulse-overlay {
+    animation: ppFadeIn 0.25s ease forwards;
+}
+.ppulse-popup-wrapper.is-closing .ppulse-overlay {
+    animation: ppFadeOut 0.22s ease forwards;
+}
+
+/* ── Bars specific animation ─────────────────────────────────────────────── */
+.ppulse-pos-top-bar .ppulse-popup {
+    animation: ppSlideDown2 0.3s var(--pp-anim-ease) forwards;
+}
+.ppulse-pos-top-bar .ppulse-popup.is-closing {
+    animation: ppSlideUp2 0.22s ease forwards;
+}
+.ppulse-pos-bottom-bar .ppulse-popup {
+    animation: ppSlideUp 0.3s var(--pp-anim-ease) forwards;
+}
+.ppulse-pos-bottom-bar .ppulse-popup.is-closing {
+    animation: ppSlideDown 0.22s ease forwards;
+}
+
+/* ── Accessibility — focus trap visible focus ring ───────────────────────── */
+.ppulse-popup:focus { outline: none; }
+.ppulse-popup *:focus-visible {
+    outline: 2px solid #4a90e2;
+    outline-offset: 2px;
+}
+
+/* ── <body> no-scroll when modal is open ─────────────────────────────────── */
+body.ppulse-no-scroll {
+    overflow: hidden;
+    /* Prevent layout shift by compensating for scrollbar */
+    padding-right: var(--ppulse-scrollbar-width, 0px);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    :root {
+        --pp-radius: 8px;
+    }
+    .ppulse-pos-center      { padding: 12px; align-items: flex-end; }
+    .ppulse-pos-top-left,
+    .ppulse-pos-top-right,
+    .ppulse-pos-bottom-left,
+    .ppulse-pos-bottom-right {
+        align-items: flex-end;
+        justify-content: stretch;
+        padding: 0;
+    }
+    .ppulse-pos-top-left .ppulse-popup,
+    .ppulse-pos-top-right .ppulse-popup,
+    .ppulse-pos-bottom-left .ppulse-popup,
+    .ppulse-pos-bottom-right .ppulse-popup {
+        max-width: 100% !important;
+        border-radius: var(--pp-radius) var(--pp-radius) 0 0;
+    }
+    .ppulse-pos-center .ppulse-popup {
+        border-radius: var(--pp-radius) var(--pp-radius) 0 0;
+    }
+    .ppulse-close {
+        top: 8px;
+        right: 8px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ppulse-popup--anim,
+    .ppulse-popup--anim-fade,
+    .ppulse-popup--anim-slide-up,
+    .ppulse-popup--anim-slide-down,
+    .ppulse-popup--anim-zoom,
+    .ppulse-popup--anim-bounce,
+    .ppulse-overlay,
+    .ppulse-close {
+        animation: none !important;
+        transition: none !important;
+    }
+}
