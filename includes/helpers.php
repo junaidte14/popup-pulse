@@ -67,15 +67,25 @@ function ppulse_save_popup_meta( $post_id, $data ) {
 }
 
 // ─── Fetch active (published) popups ─────────────────────────────────────────
+// FIX: Use OR meta query so that popups whose _ppulse_enabled meta has never been
+// explicitly written (e.g. created via Gutenberg REST API before the classic
+// meta-box iframe fires) are still returned — the default is enabled = '1'.
+// Popups explicitly disabled will have the meta row set to '0' and will be
+// correctly excluded.
 function ppulse_get_active_popups() {
     $query = new WP_Query( [
         'post_type'      => PPULSE_POST_TYPE,
         'post_status'    => 'publish',
         'posts_per_page' => -1,
         'meta_query'     => [
+            'relation' => 'OR',
             [
                 'key'   => '_ppulse_enabled',
                 'value' => '1',
+            ],
+            [
+                'key'     => '_ppulse_enabled',
+                'compare' => 'NOT EXISTS',
             ],
         ],
         'no_found_rows'  => true,
@@ -144,7 +154,14 @@ function ppulse_sanitize_meta_input( $raw ) {
         } elseif ( $key === 'trigger_click_selector' ) {
             $sanitized[ $key ] = sanitize_text_field( $val );
         } elseif ( $key === 'display_pages' ) {
-            $sanitized[ $key ] = is_array( $val ) ? implode( ',', array_map( 'absint', $val ) ) : sanitize_text_field( $val );
+            // Value is either 'all', 'front', or a comma-separated list of IDs
+            if ( $val === 'all' || $val === 'front' ) {
+                $sanitized[ $key ] = $val;
+            } else {
+                // Clean up comma-separated IDs: remove zeros and non-numeric
+                $ids = array_filter( array_map( 'absint', explode( ',', $val ) ) );
+                $sanitized[ $key ] = ! empty( $ids ) ? implode( ',', $ids ) : 'all';
+            }
         } elseif ( $key === 'overlay_color' || $key === 'popup_bg_color' ) {
             $sanitized[ $key ] = sanitize_hex_color( $val ) ?: $default;
         } elseif ( $key === 'full_width_image_url' ) {

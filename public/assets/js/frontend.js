@@ -44,7 +44,7 @@
 
     function hasExceededFrequency(cfg) {
         if (hasDnt() && cfg.frequencyType !== 'always' && cfg.frequencyType !== 'per_page') {
-            return false; // DNT: can't track, so just show (or block — user's choice via setting)
+            return false; // DNT: can't track, so just show
         }
 
         var cookieName = ppulseFE.cookiePrefix + cfg.id;
@@ -92,7 +92,7 @@
             return;
         }
 
-        // Report to server (for logged-in user meta tracking)
+        // Report to server for logged-in user meta tracking ('always' type)
         if (ppulseFE.ajaxUrl && cfg.nonce) {
             var body = new FormData();
             body.append('action',   'ppulse_record_impression');
@@ -160,6 +160,23 @@
         }
     }
 
+    // ── Auto-close progress bar ───────────────────────────────────────────────
+    // FIX: The CSS animation for the progress bar is attached to the element at
+    // render time which means it runs from page load, not from when the popup
+    // actually opens (which could be seconds later for delayed triggers).
+    // We reset and restart the animation inside openPopup() instead.
+    function restartAutoCloseBar(wrapper, durationSeconds) {
+        var bar = wrapper.querySelector('.ppulse-autoclose-bar__fill');
+        if (!bar) return;
+        // Remove animation, force reflow, then reapply with correct duration
+        bar.style.animation = 'none';
+        bar.style.animationDuration = '';
+        // eslint-disable-next-line no-void
+        void bar.offsetWidth; // trigger reflow
+        bar.style.animation = '';
+        bar.style.animationDuration = durationSeconds + 's';
+    }
+
     // ── Popup open / close ────────────────────────────────────────────────────
 
     function openPopup(cfg) {
@@ -174,6 +191,7 @@
         wrapper.setAttribute('data-ppulse-open', 'true');
 
         // Force reflow then add open class
+        // eslint-disable-next-line no-void
         void wrapper.offsetWidth;
         wrapper.classList.add('is-open');
 
@@ -186,8 +204,12 @@
             trapFocus(wrapper);
         }
 
-        // Auto-close
+        // Auto-close: restart the progress-bar animation from this moment, then
+        // schedule the actual close after the configured delay (in ms).
         if (cfg.autoCloseEnabled && cfg.autoCloseSeconds > 0) {
+            var durationSec = cfg.autoCloseSeconds / 1000;
+            restartAutoCloseBar(wrapper, durationSec);
+
             wrapper._ppAutoCloseTimer = setTimeout(function () {
                 closePopup(cfg, wrapper);
             }, cfg.autoCloseSeconds);
@@ -276,12 +298,12 @@
                 break;
 
             case 'exit':
-                // Will be handled by exit intent below
+                // Handled exclusively by exit intent below
                 break;
         }
 
-        // Secondary: exit intent (additive for delay/scroll triggers too)
-        if (cfg.exitIntent) {
+        // Secondary: exit intent (additive — works alongside delay/scroll triggers)
+        if (cfg.exitIntent || cfg.triggerType === 'exit') {
             setupExitIntent(cfg, function () {
                 if (triggered) return;
                 triggered = true;
@@ -317,7 +339,7 @@
         }
 
         window.addEventListener('scroll', onScroll, { passive: true });
-        checkScroll(); // Check immediately in case already scrolled
+        checkScroll(); // Check immediately in case user already scrolled
     }
 
     // ── Click trigger ─────────────────────────────────────────────────────────
@@ -344,16 +366,10 @@
         if (_exitBound) return;
         _exitBound = true;
 
-        var threshold   = 10;   // px from top
-        var cooldown    = false;
-        var minTime     = 2000; // must be on page for at least 2s
-        var startTime   = Date.now();
-        var lastY       = 0;
-
-        document.addEventListener('mousemove', function (e) {
-            var y = e.clientY;
-            lastY = y;
-        });
+        var threshold = 10;   // px from top
+        var cooldown  = false;
+        var minTime   = 2000; // must be on page for at least 2s
+        var startTime = Date.now();
 
         document.addEventListener('mouseleave', function (e) {
             if (cooldown) return;
@@ -370,7 +386,7 @@
             });
         });
 
-        // Mobile: back button / page hide
+        // Mobile: back button / page hide fallback
         window.addEventListener('pagehide', function () {
             _exitCallbacks.forEach(function (item) {
                 if (!hasExceededFrequency(item.cfg)) {
@@ -440,7 +456,7 @@
         setupCloseHandlers();
 
         var stagger = 0;
-        ppulseFE.popups.forEach(function (cfg, idx) {
+        ppulseFE.popups.forEach(function (cfg) {
             // Add small stagger so multiple popups don't fire simultaneously
             setTimeout(function () {
                 setupTriggers(cfg);

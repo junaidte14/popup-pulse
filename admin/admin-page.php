@@ -7,9 +7,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-add_action( 'admin_menu', 'ppulse_register_admin_pages' );
+add_action( 'admin_menu',    'ppulse_register_admin_pages' );
 add_action( 'admin_notices', 'ppulse_maybe_show_welcome_notice' );
-add_action( 'admin_init', 'ppulse_dismiss_welcome_notice' );
+add_action( 'admin_init',    'ppulse_dismiss_welcome_notice' );
 
 // ─── Register sub-pages ───────────────────────────────────────────────────────
 function ppulse_register_admin_pages() {
@@ -122,11 +122,24 @@ function ppulse_render_settings_page() {
         <div class="ppulse-card ppulse-card--stats">
             <h2><?php esc_html_e( 'Quick Stats', 'ppulse' ); ?></h2>
             <?php
+            // FIX: Mirror the OR meta query used in ppulse_get_active_popups() so
+            // newly-created popups (whose _ppulse_enabled meta may not be written
+            // yet) are counted correctly.
             $active = new WP_Query( [
                 'post_type'      => PPULSE_POST_TYPE,
                 'post_status'    => 'publish',
                 'posts_per_page' => -1,
-                'meta_query'     => [ [ 'key' => '_ppulse_enabled', 'value' => '1' ] ],
+                'meta_query'     => [
+                    'relation' => 'OR',
+                    [
+                        'key'   => '_ppulse_enabled',
+                        'value' => '1',
+                    ],
+                    [
+                        'key'     => '_ppulse_enabled',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                ],
                 'no_found_rows'  => false,
                 'fields'         => 'ids',
             ] );
