@@ -213,8 +213,18 @@
                     $btn.prop('disabled', false).text('Apply');
                     if (res.success) {
                         PP.showToast(res.data.message, 'success');
-                        // Reload to reflect new meta values
-                        setTimeout(function () { window.location.reload(); }, 800);
+                        
+                        // Update the editor content if Gutenberg is available
+                        if (wp.data && wp.data.dispatch) {
+                            var content = res.data.content || '';
+                            wp.data.dispatch('core/editor').editPost({ content: content });
+                            wp.data.dispatch('core/editor').savePost();
+                        } else {
+                            // Fallback: reload after a short delay
+                            setTimeout(function () { 
+                                window.location.reload(); 
+                            }, 1000);
+                        }
                     } else {
                         PP.showToast(res.data.message || ppulseAdmin.strings.error, 'error');
                     }
@@ -230,30 +240,54 @@
             $(document).on('click', '.ppulse-btn-preview', function (e) {
                 e.preventDefault();
                 var postId = $(this).data('post-id') || ppulseAdmin.postId;
-                if (!postId) return;
+                if (!postId) {
+                    PP.showToast('No popup ID found', 'error');
+                    return;
+                }
+
+                // Show loading state
+                var $btn = $(this);
+                var originalText = $btn.text();
+                $btn.prop('disabled', true).text('Loading...');
 
                 $.post(ppulseAdmin.ajaxUrl, {
                     action:  'ppulse_get_popup_data',
                     nonce:   ppulseAdmin.nonce,
                     post_id: postId
                 }, function (res) {
+                    $btn.prop('disabled', false).text(originalText);
+                    
                     if (!res.success) {
-                        PP.showToast(res.data.message || ppulseAdmin.strings.error, 'error');
+                        PP.showToast(res.data && res.data.message || ppulseAdmin.strings.error, 'error');
                         return;
                     }
                     PP.openAdminPreview(res.data);
-                }).fail(function () {
-                    PP.showToast(ppulseAdmin.strings.error, 'error');
+                }).fail(function (xhr, status, error) {
+                    $btn.prop('disabled', false).text(originalText);
+                    console.error('Preview error:', error);
+                    PP.showToast('Failed to load preview: ' + error, 'error');
                 });
             });
         },
 
         openAdminPreview: function (data) {
             var $backdrop = $('<div class="ppulse-admin-preview-backdrop"></div>');
-            var $dialog   = $(
-                '<div class="ppulse-admin-preview-dialog" role="dialog" aria-modal="true">' +
+            
+            // Build the dialog with proper background
+            var bgStyle = '';
+            if (data.meta && data.meta.popup_bg_color) {
+                bgStyle = 'style="background-color:' + data.meta.popup_bg_color + '"';
+            }
+            
+            // Add full-width image if present
+            if (data.meta && data.meta.full_width_image && data.meta.full_width_image_url) {
+                bgStyle = 'style="background-image:url(' + data.meta.full_width_image_url + ');background-size:cover;background-position:center;background-color:' + (data.meta.popup_bg_color || '#ffffff') + '"';
+            }
+            
+            var $dialog = $(
+                '<div class="ppulse-admin-preview-dialog" role="dialog" aria-modal="true" ' + bgStyle + '>' +
                     '<div class="ppulse-admin-preview-dialog__bar">' +
-                        '<span>Preview: ' + $('<span>').text(data.title).html() + '</span>' +
+                        '<span>Preview: ' + $('<div>').text(data.title).html() + '</span>' +
                         '<button class="ppulse-admin-preview-dialog__close" type="button" aria-label="Close">&times;</button>' +
                     '</div>' +
                     '<div class="ppulse-admin-preview-dialog__body">' +
@@ -264,14 +298,11 @@
 
             $backdrop.append($dialog).appendTo('body');
 
-            // Apply background color from meta
-            if (data.meta && data.meta.popup_bg_color) {
-                $dialog.css('background-color', data.meta.popup_bg_color);
-            }
-
+            // Close handlers
             $backdrop.on('click', function (e) {
                 if ($(e.target).is($backdrop) || $(e.target).is('.ppulse-admin-preview-dialog__close')) {
                     $backdrop.remove();
+                    $(document).off('keydown.ppulse-preview');
                 }
             });
 

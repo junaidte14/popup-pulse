@@ -104,6 +104,7 @@ function ppulse_get_frontend_popup_configs() {
             'fullWidthImage'        => (bool) $meta['full_width_image'],
             'fullWidthImageUrl'     => $meta['full_width_image_url'],
             'overlayOpacity'        => (float) $meta['overlay_opacity'],
+            'maxWidth'              => (int) $meta['popup_max_width'],
         ];
     }
 
@@ -197,9 +198,12 @@ function ppulse_render_single_popup( $popup, $meta ) {
         $bg_style .= 'max-width:' . $max_width . 'px;';
     }
 
+    $has_cover_image = false;
     // Full-width image cover
     if ( $meta['full_width_image'] && $meta['full_width_image_url'] ) {
-        $bg_style .= 'background-image:url(' . esc_url( $meta['full_width_image_url'] ) . ');background-size:cover;background-position:center;';
+        $bg_style .= 'background-image:url(' . esc_url( $meta['full_width_image_url'] ) . ');';
+        $animate_class .= ' ppulse-popup--has-cover-image';
+        $has_cover_image = true;
     }
 
     $overlay_style = 'background:' . esc_attr( $meta['overlay_color'] ) . ';opacity:' . esc_attr( $meta['overlay_opacity'] ) . ';';
@@ -208,6 +212,12 @@ function ppulse_render_single_popup( $popup, $meta ) {
     if ( $is_bar ) {
         $wrapper_class .= ' ppulse-popup-wrapper--bar';
     }
+    
+    // Add inline style for close button positioning
+    $close_button_style = '';
+    if ( ! $is_bar && $max_width && $max_width < 9000 ) {
+        $close_button_style = '--popup-width:' . $max_width . 'px;';
+    }
     ?>
     <div id="ppulse-<?php echo esc_attr( $popup_id ); ?>"
          class="<?php echo esc_attr( $wrapper_class ); ?>"
@@ -215,7 +225,7 @@ function ppulse_render_single_popup( $popup, $meta ) {
          aria-modal="true"
          aria-label="<?php echo esc_attr( $popup->post_title ); ?>"
          data-ppulse-id="<?php echo esc_attr( $popup_id ); ?>"
-         style="display:none;"
+         style="display:none;<?php echo esc_attr( $close_button_style ); ?>"
          hidden>
 
         <?php if ( ! $is_bar ) : ?>

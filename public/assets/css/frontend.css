@@ -74,23 +74,29 @@
 .ppulse-popup::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 4px; }
 
 /* Full-screen for image cover */
-.ppulse-pos-center .ppulse-popup[style*="background-image"] {
+.ppulse-popup--has-cover-image {
     max-height: 100vh;
     height: 100vh;
     border-radius: 0;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* Make content transparent when cover image is present */
+.ppulse-popup--has-cover-image .ppulse-popup__content > * {
+    background: transparent !important;
 }
 
 /* ── Close button ─────────────────────────────────────────────────────────── */
 .ppulse-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    position: fixed;
     z-index: var(--pp-z-close);
     width: var(--pp-close-size);
     height: var(--pp-close-size);
     border-radius: var(--pp-radius-btn);
     border: none;
-    background: rgba(0,0,0,.15);
+    background: rgba(0,0,0,.6);
     color: #fff;
     cursor: pointer;
     display: flex;
@@ -98,11 +104,49 @@
     justify-content: center;
     transition: background 0.18s, transform 0.18s;
     padding: 0;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
+
+/* Position close button relative to popup wrapper, not popup box */
+.ppulse-pos-center .ppulse-close {
+    top: calc(50% - (90vh / 2) + 10px);
+    right: calc(50% - (var(--popup-width, 520px) / 2) - 10px);
+}
+
+.ppulse-pos-top-left .ppulse-close,
+.ppulse-pos-top-right .ppulse-close {
+    top: 30px;
+}
+
+.ppulse-pos-bottom-left .ppulse-close,
+.ppulse-pos-bottom-right .ppulse-close {
+    bottom: 30px;
+}
+
+.ppulse-pos-top-right .ppulse-close,
+.ppulse-pos-bottom-right .ppulse-close {
+    right: 30px;
+}
+
+.ppulse-pos-top-left .ppulse-close,
+.ppulse-pos-bottom-left .ppulse-close {
+    left: calc(20px + var(--popup-width, 400px) - 36px);
+}
+
+/* Bar positioning */
+.ppulse-pos-top-bar .ppulse-close {
+    top: 10px;
+    right: 10px;
+}
+
+.ppulse-pos-bottom-bar .ppulse-close {
+    bottom: 10px;
+    right: 10px;
+}
+
 .ppulse-close:hover {
-    background: rgba(0,0,0,.3);
+    background: rgba(0,0,0,.8);
     transform: scale(1.1);
 }
 .ppulse-close:focus-visible {
@@ -120,6 +164,7 @@
     background: rgba(0,0,0,.08);
     overflow: hidden;
     border-radius: 0 0 var(--pp-radius) var(--pp-radius);
+    z-index: 10;
 }
 .ppulse-autoclose-bar__fill {
     height: 100%;
@@ -136,7 +181,8 @@
 
 /* ── Content area ────────────────────────────────────────────────────────── */
 .ppulse-popup__content {
-    /* Let Gutenberg styles apply naturally */
+    position: relative;
+    z-index: 1;
 }
 .ppulse-popup__content > *:first-child { margin-top: 0; }
 .ppulse-popup__content > *:last-child  { margin-bottom: 0; }
@@ -231,8 +277,30 @@
 /* ── <body> no-scroll when modal is open ─────────────────────────────────── */
 body.ppulse-no-scroll {
     overflow: hidden;
-    /* Prevent layout shift by compensating for scrollbar */
     padding-right: var(--ppulse-scrollbar-width, 0px);
+}
+
+/* Adjust for WordPress admin bar */
+.admin-bar .ppulse-pos-center .ppulse-close {
+    top: calc(50% - (90vh / 2) + 10px + 32px);
+}
+
+.admin-bar .ppulse-pos-top-left .ppulse-close,
+.admin-bar .ppulse-pos-top-right .ppulse-close,
+.admin-bar .ppulse-pos-top-bar .ppulse-close {
+    top: calc(30px + 32px);
+}
+
+@media screen and (max-width: 782px) {
+    .admin-bar .ppulse-pos-center .ppulse-close {
+        top: calc(50% - (90vh / 2) + 10px + 46px);
+    }
+    
+    .admin-bar .ppulse-pos-top-left .ppulse-close,
+    .admin-bar .ppulse-pos-top-right .ppulse-close,
+    .admin-bar .ppulse-pos-top-bar .ppulse-close {
+        top: calc(30px + 46px);
+    }
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
@@ -259,7 +327,10 @@ body.ppulse-no-scroll {
     .ppulse-pos-center .ppulse-popup {
         border-radius: var(--pp-radius) var(--pp-radius) 0 0;
     }
+    
+    /* Mobile close button positioning */
     .ppulse-close {
+        position: absolute;
         top: 8px;
         right: 8px;
     }
